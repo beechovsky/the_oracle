@@ -1,2 +1,2 @@
 # the_oracle
-Code related to the art installation The Rocale by Kelley Bell
+Code related to the art installation The Oracle by Kelley Bell
