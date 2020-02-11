@@ -8,6 +8,8 @@ void loop() {
   // availableForWrite() gets the number of bytes available for writing in the serial buffer without blocking the write operation.
   while(Serial.availableForWrite()) {
 
+    // Docs recommend using print() or println() for chars representing a number
+    // https://www.arduino.cc/reference/en/language/functions/communication/serial/write/
     // Same as print(), but with carriage return character (ASCII 13, or '\r') and newline character (ASCII 10, or '\n')  
     Serial.println(analogRead(A0)); 
 

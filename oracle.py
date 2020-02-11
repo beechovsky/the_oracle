@@ -1,65 +1,78 @@
 import serial
+import time
 import os
-import cv2
-# I should be able to simply decode the byte string coming over serial,
-# but the strings I get change sometimes.
-# So, I'm ripping out non-numeric chars.
-import re
+import random
+import subprocess
 
-# TODO: investigate other args
-# read serial input
-serial_input = serial.Serial('/dev/ttyUSB0', 9600)
+# opening and closing this in the loop is messy; causes reading mid-string
+# could alleviate that by waiting for a certain amount of info,
+# but we'd still be closing and reopening the stream which will cause pauses and stutters
+# so, the stream is always on
+serial_path = '/dev/ttyUSB0'
+serial_input = serial.Serial(serial_path, 9600)  # this auto-opens the port
+time.sleep(2)  # wait for Arduino, which resets when serial conn opened
 
-# paths need updating every time this program moves to a different computer
-answer_path = '/home/arctangent/the_oracle/video/answers/'
-answer_dir = os.fsencode(answer_path)
+# default .mov
+sleep_mov_path = '../the_oracle_mov/sleep.mov'
 
-sleeping_path = '/home/arctangent/the_oracle/video/sleeping.mov'
+# answer .movs
+answer_mov_root = '../the_oracle_mov/answers/'
+answer_movs = os.listdir(answer_mov_root)
 
-no_signal_path = '/home/arctangent/the_oracle/video/no_signal.mov'
+# playing .mov files from python is ... difficult
+# so, letting bash do it via vlc, which has a robust and well-documented cli:
+# https://wiki.videolan.org/VLC_command-line_help/
+# may need -L to loop
+play_sleep_bash = "cvlc -f --no-video-title-show --one-instance --no-interact ../the_oracle_mov/sleep.mov"
 
-# TODO: Is this necessary?
-# serial_input.flushInput()
 
-# While there's input, keep going.
-while (serial_input.readline()):
-    # # open default mov file
-    # sleeping_cap = cv2.VideoCapture(sleeping_path)
-    #
-    # # debug
-    # if (sleeping_cap.isOpened() == False):
-    #   print("Error opening video file")
-    #
-    # # Read until video is completed
-    # while (sleeping_cap.isOpened()):
-    #   # Capture frame-by-frame
-    #   ret, frame = sleeping_cap.read()
-    #   if ret == True:
-    #     # Display the resulting frame
-    #     cv2.imshow('Frame', frame)
-    #
-    #     # Press Q on keyboard to exit
-    #     if cv2.waitKey(25) & 0xFF == ord('q'):
-    #       # Closes all the frames
-    #       cv2.destroyAllWindows()
-    #       break
-    #
-    #   # Break the loop
-    #   else:
-    #     break
-    #
-    # # When everything done, release the video capture object
-    # #sleeping_cap.release()
+# generic method to play mov files
+def play_mov_cv2(bash, is_answer):
+    # run bash script
+    process = subprocess.Popen(bash.split())
 
-    # debug
-    value = serial_input.readline().strip().decode("utf-8") # decode() to return str for regex
-    class_name = value.__class__.__name__
-    print(value)
-    print(class_name)
-    ### NOTE: This was a byte string, e.g. b'358' after stripping. Something changed ...
-    # Method 1: regex
-    #value = re.sub("[^0-9]", "", serial_input.readline())
-    # Method 2: filter and lambda
-    #value = "".join(filter(lambda x: x.isdigit(), serial_input.readline()))
-    #value = serial_input.readline().strip()
-    #print(value)
+    # calling communicate() on the object returned from Popen will block until it completes.
+    # if is_answer:
+    #    output, error = process.communicate()
+    output, error = process.communicate()
+
+
+while True:
+    try:
+        # https://pyserial.readthedocs.io/en/latest/shortintro.html#readline
+        value = serial_input.readline().strip().decode("utf-8")  # format for easy digestion - '3XX'
+        print(value)
+
+        if int(value) > 300:  # nominal
+            # play default .mov
+            play_mov_cv2(play_sleep_bash, False)
+
+            # problem 1 - catch 22
+            # The call to communicate() in play_mov_cv2 blocks serial read.
+            # This means the system isn't looking for serial input while the mov plays.
+            # That would be okay with answer movs, but not the default sleep mov.
+            # However, without that blocking, the system will attempt to spin up sleep movie every time it reads.
+
+            # play_mov_cv2.is_answer can determine whether or not to block,
+            # but that is only useful if I can stop the default sleep mov from playing anew at every readline()
+
+            # This doesn't work because there's still no serial input while sleep mov is playing.
+            # sleep for the length of the clip before reading input again
+            # time.sleep(3)
+
+        else:  # interference
+            # get a random idx for selecting random answer .mov
+            answer_index = random.randint(0, len(answer_movs) - 1)
+
+            play_answer_bash = 'cvlc -f --no-video-title-show --one-instance --no-interact --play-and-exit ' + answer_mov_root + \
+                               answer_movs[answer_index]
+
+            # queue the answer .mov
+            play_mov_cv2(play_answer_bash, True)
+    # ignore errors caused by grabbing values mid-byte and try again until we get the beginning
+    except UnicodeDecodeError:
+        pass
+    except ValueError:
+        pass
+
+
