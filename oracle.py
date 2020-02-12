@@ -3,11 +3,9 @@ import time
 import os
 import random
 import subprocess
+import signal
 
-# opening and closing this in the loop is messy; causes reading mid-string
-# could alleviate that by waiting for a certain amount of info,
-# but we'd still be closing and reopening the stream which will cause pauses and stutters
-# so, the stream is always on
+# connect to Arduino
 serial_path = '/dev/ttyUSB0'
 serial_input = serial.Serial(serial_path, 9600)  # this auto-opens the port
 time.sleep(2)  # wait for Arduino, which resets when serial conn opened
@@ -22,57 +20,49 @@ answer_movs = os.listdir(answer_mov_root)
 # playing .mov files from python is ... difficult
 # so, letting bash do it via vlc, which has a robust and well-documented cli:
 # https://wiki.videolan.org/VLC_command-line_help/
-# may need -L to loop
-play_sleep_bash = "cvlc -f --no-video-title-show --one-instance --no-interact ../the_oracle_mov/sleep.mov"
+play_sleep_bash = "cvlc -f -L --no-video-title-show --one-instance --no-interact ../the_oracle_mov/sleep.mov"
 
-
-# generic method to play mov files
-def play_mov_cv2(bash, is_answer):
-    # run bash script
-    process = subprocess.Popen(bash.split())
-
-    # calling communicate() on the object returned from Popen will block until it completes.
-    # if is_answer:
-    #    output, error = process.communicate()
-    output, error = process.communicate()
-
+# start default sleep mov
+sleep_process = subprocess.Popen(play_sleep_bash.split())
 
 while True:
+    # since we're jumping in mid-stream, the try/except will make sure we wait for good data
     try:
         # https://pyserial.readthedocs.io/en/latest/shortintro.html#readline
         value = serial_input.readline().strip().decode("utf-8")  # format for easy digestion - '3XX'
         print(value)
 
-        if int(value) > 300:  # nominal
-            # play default .mov
-            play_mov_cv2(play_sleep_bash, False)
+        if int(value) < 300:  # interference
+            # terminate sleep process
+            sleep_process.terminate()
+            # os.kill(process.pid, signal.SIGINT)
 
-            # problem 1 - catch 22
-            # The call to communicate() in play_mov_cv2 blocks serial read.
-            # This means the system isn't looking for serial input while the mov plays.
-            # That would be okay with answer movs, but not the default sleep mov.
-            # However, without that blocking, the system will attempt to spin up sleep movie every time it reads.
+            # don't cue the sleep mov while the answer plays
+            # sleeping = False
 
-            # play_mov_cv2.is_answer can determine whether or not to block,
-            # but that is only useful if I can stop the default sleep mov from playing anew at every readline()
-
-            # This doesn't work because there's still no serial input while sleep mov is playing.
-            # sleep for the length of the clip before reading input again
-            # time.sleep(3)
-
-        else:  # interference
             # get a random idx for selecting random answer .mov
             answer_index = random.randint(0, len(answer_movs) - 1)
 
-            play_answer_bash = 'cvlc -f --no-video-title-show --one-instance --no-interact --play-and-exit ' + answer_mov_root + \
-                               answer_movs[answer_index]
+            # may need --play-and-exit
+            play_answer_bash = 'cvlc -f --no-video-title-show --playlist-enqueue --play-and-exit --no-interact ' + answer_mov_root + answer_movs[answer_index]
 
             # queue the answer .mov
-            play_mov_cv2(play_answer_bash, True)
+            # run bash script
+            answer_process = subprocess.Popen(play_answer_bash.split())
+            # calling communicate() on the object returned from Popen will block until it completes.
+            output, error = answer_process.communicate()
+            # upon completion, terminate and kill the answer mov process and restart the sleep mov process
+            answer_process.terminate()
+            # answer_process.kill()
+            # os.kill(answer_process.pid, signal.SIGKILL)
+
+            # fire up the sleep loop again
+            sleep_process = subprocess.Popen(play_sleep_bash.split())
     # ignore errors caused by grabbing values mid-byte and try again until we get the beginning
     except UnicodeDecodeError:
         pass
     except ValueError:
         pass
+
 
 
