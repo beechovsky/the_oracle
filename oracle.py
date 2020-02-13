@@ -3,7 +3,6 @@ import time
 import os
 import random
 import subprocess
-import signal
 
 # connect to Arduino
 serial_path = '/dev/ttyUSB0'
@@ -20,9 +19,9 @@ answer_movs = os.listdir(answer_mov_root)
 # playing .mov files from python is ... difficult
 # so, letting bash do it via vlc, which has a robust and well-documented cli:
 # https://wiki.videolan.org/VLC_command-line_help/
-play_sleep_bash = "cvlc -f -L --no-video-title-show --one-instance --no-interact ../the_oracle_mov/sleep.mov"
+play_sleep_bash = "cvlc -R --no-video-title-show --no-interact -f ../the_oracle_mov/sleep.mov"
 
-# start default sleep mov
+# start default sleep mov, non-blocking so interference can be caught
 sleep_process = subprocess.Popen(play_sleep_bash.split())
 
 while True:
@@ -30,39 +29,36 @@ while True:
     try:
         # https://pyserial.readthedocs.io/en/latest/shortintro.html#readline
         value = serial_input.readline().strip().decode("utf-8")  # format for easy digestion - '3XX'
+        # debug
         print(value)
+        # print(len(value))
 
-        if int(value) < 300:  # interference
+        if len(value) is 3 and int(value) < 300:  # interference
+
             # terminate sleep process
-            sleep_process.terminate()
-            # os.kill(process.pid, signal.SIGINT)
-
-            # don't cue the sleep mov while the answer plays
-            # sleeping = False
+            sleep_process.terminate()  # non-blocking process only requires terminate() to stop
 
             # get a random idx for selecting random answer .mov
             answer_index = random.randint(0, len(answer_movs) - 1)
 
-            # may need --play-and-exit
-            play_answer_bash = 'cvlc -f --no-video-title-show --playlist-enqueue --play-and-exit --no-interact ' + answer_mov_root + answer_movs[answer_index]
+            # may need  --one-instance --play-and-exit; doesn't need --playlist-enqueue as that's default behavior
+            play_answer_bash = 'cvlc --no-video-title-show --no-interact --play-and-exit -f ' + answer_mov_root + answer_movs[answer_index]
 
             # queue the answer .mov
-            # run bash script
             answer_process = subprocess.Popen(play_answer_bash.split())
-            # calling communicate() on the object returned from Popen will block until it completes.
-            output, error = answer_process.communicate()
-            # upon completion, terminate and kill the answer mov process and restart the sleep mov process
-            answer_process.terminate()
-            # answer_process.kill()
-            # os.kill(answer_process.pid, signal.SIGKILL)
+            # answer_process = subprocess.Popen(play_answer_bash.split(), stdout=subprocess.PIPE)
 
-            # fire up the sleep loop again
+            # calling wait() on the object returned from Popen will block until it completes.
+            answer_process.wait()
+
+            # fire up sleep mov when answer vid finishes
             sleep_process = subprocess.Popen(play_sleep_bash.split())
+
+            # flush buffer
+            serial_input.reset_input_buffer()
+
     # ignore errors caused by grabbing values mid-byte and try again until we get the beginning
     except UnicodeDecodeError:
         pass
     except ValueError:
         pass
-
-
-
