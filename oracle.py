@@ -19,7 +19,11 @@ answer_movs = os.listdir(answer_mov_root)
 # playing .mov files from python is ... difficult
 # so, letting bash do it via vlc, which has a robust and well-documented cli:
 # https://wiki.videolan.org/VLC_command-line_help/
-play_sleep_bash = "cvlc -R --no-video-title-show --no-interact -f ../the_oracle_mov/sleep.mov"
+
+# DRY & comply with PEP8
+# --no-qt-video-autoresize
+vlc_bash = 'cvlc --fullscreen --no-autoscale --no-qt-video-autoresize --no-video-title-show --no-interact '
+play_sleep_bash = vlc_bash + '--repeat ../the_oracle_mov/sleep.mov'
 
 # start default sleep mov, non-blocking so interference can be caught
 sleep_process = subprocess.Popen(play_sleep_bash.split())
@@ -42,7 +46,10 @@ while True:
             answer_index = random.randint(0, len(answer_movs) - 1)
 
             # may need  --one-instance --play-and-exit; doesn't need --playlist-enqueue as that's default behavior
-            play_answer_bash = 'cvlc --no-video-title-show --no-interact --play-and-exit -f ' + answer_mov_root + answer_movs[answer_index]
+            play_answer_bash = vlc_bash + '--play-and-exit ' + answer_mov_root + answer_movs[answer_index]
+
+            # alternate: use vlc random arg an pass the whole answer dir
+            # play_answer_bash = vlc_bash + '--play-and-exit --random --fullscreen ' + answer_mov_root
 
             # queue the answer .mov
             answer_process = subprocess.Popen(play_answer_bash.split())
