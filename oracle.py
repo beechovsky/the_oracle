@@ -29,9 +29,11 @@ while True:
     try:
         # https://pyserial.readthedocs.io/en/latest/shortintro.html#readline
         value = serial_input.readline().strip().decode("utf-8")  # format for easy digestion - '3XX'
+        # debug
         print(value)
+        # print(len(value))
 
-        if int(value) < 300:  # interference
+        if len(value) is 3 and int(value) < 300:  # interference
 
             # terminate sleep process
             sleep_process.terminate()  # non-blocking process only requires terminate() to stop
