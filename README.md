@@ -1,5 +1,5 @@
-# the_oracle
-Code related to the art installation The Oracle by Kelley Bell
+# The Oracle
+This repo tracks code related to the art installation "The Oracle" by Kelley Bell.
 
 In a nutshell, and Arduino sends light intensity values from a photoresistor over serial bus to a Linux box. There, Python is used to control the playback of a series of related .mov clips based on the value sent.
 
