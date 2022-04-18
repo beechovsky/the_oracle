@@ -11,5 +11,5 @@ This project requires programming both in Python and the Arduino programming lan
 ### Python Docs:
 https://docs.python.org/3.8/
 
-### Ardunio Language Ref:
+### Arduino Language Ref:
 https://www.arduino.cc/reference/en/
