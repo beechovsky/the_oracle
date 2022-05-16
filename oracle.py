@@ -16,6 +16,16 @@ sleep_mov_path = '../the_oracle_mov/sleep.mov'
 answer_mov_root = '../the_oracle_mov/answers/'
 answer_movs = os.listdir(answer_mov_root)
 
+
+####################################################################
+#
+# TRY OPENCV ON THIS REPO INSTEAD
+#
+# See here: https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html
+#
+#####################################################################
+
+
 # playing .mov files from python is ... difficult
 # so, letting bash do it via vlc, which has a robust and well-documented cli:
 # https://wiki.videolan.org/VLC_command-line_help/
