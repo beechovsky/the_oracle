@@ -5,7 +5,7 @@ import random
 import subprocess
 
 # connect to Arduino
-serial_path = '/dev/ttyUSB0'
+serial_path = '/dev/ttyUSB0' # for ttyUSBN, N is assigned randomly at startup. May want to determine dynamically.
 serial_input = serial.Serial(serial_path, 9600)  # this auto-opens the port
 time.sleep(2)  # wait for Arduino, which resets when serial conn opened
 
@@ -37,7 +37,7 @@ while True:
         print(value)
         # print(len(value))
 
-        if len(value) is 3 and int(value) < 300:  # interference
+        if len(value) is 3 and int(value) < 300:  # valid format and interference
 
             # terminate sleep process
             sleep_process.terminate()  # non-blocking process only requires terminate() to stop
