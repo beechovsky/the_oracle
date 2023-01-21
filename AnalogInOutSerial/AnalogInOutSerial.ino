@@ -1,3 +1,6 @@
+// TODO: May want to have more control here, as in sending 'play' signals upon detecting interference, 
+//  flushing the buffer, and stopping reading until receiving a signal to start again.
+
 void setup() {
   // initialize serial communications at 9600 bps:
   delay(1000); // apparently startup delay is good to keep the arduino from getting confused
