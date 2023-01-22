@@ -65,6 +65,7 @@ while True:
             serial_input.reset_input_buffer()
 
     # ignore errors caused by grabbing values mid-byte and try again until we get the beginning
+    # TODO: If we were simply getting/sending start/stop signals between the components, this hack wouldn;t be necessary.
     except UnicodeDecodeError:
         pass
     except ValueError:
