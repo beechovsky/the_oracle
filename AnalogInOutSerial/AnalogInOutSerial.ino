@@ -11,7 +11,12 @@ void loop() {
     // Docs recommend using print() or println() for chars representing a number
     // https://www.arduino.cc/reference/en/language/functions/communication/serial/write/
     // Same as print(), but with carriage return character (ASCII 13, or '\r') and newline character (ASCII 10, or '\n')  
-    Serial.println(analogRead(A0)); 
+    Serial.println(analogRead(A0));
+
+    // control structure to capture state instead for sending 'play' signal' only
+    //if (analogRead(A0) < 300) {
+    //  Serial.println(analogRead(A0)); 
+    //} 
 
     // blocking stop so buffer doesn't overflow
     delay(2);
