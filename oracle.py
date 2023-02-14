@@ -3,6 +3,8 @@ import time
 import os
 import random
 import subprocess
+import numpy as np
+import cv2
 
 # connect to Arduino
 serial_path = '/dev/ttyUSB0'
@@ -32,11 +34,24 @@ answer_movs = os.listdir(answer_mov_root)
 
 # DRY & comply with PEP8
 # --no-qt-video-autoresize
-vlc_bash = 'cvlc --fullscreen --no-autoscale --no-qt-video-autoresize --no-video-title-show --no-interact '
-play_sleep_bash = vlc_bash + '--repeat ../the_oracle_mov/sleep.mov'
+#vlc_bash = 'cvlc --fullscreen --no-autoscale --no-qt-video-autoresize --no-video-title-show --no-interact '
+#play_sleep_bash = vlc_bash + '--repeat ../the_oracle_mov/sleep.mov'
 
 # start default sleep mov, non-blocking so interference can be caught
-sleep_process = subprocess.Popen(play_sleep_bash.split())
+#sleep_process = subprocess.Popen(play_sleep_bash.split())
+cap = cv2.VideoCapture(sleep_mov_path)
+while(cap.isOpened()):
+    ret, frame = cap.read()
+    if ret == True:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        cv2.imshow('frame', gray)
+        # & 0xFF is required for a 64-bit system
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    else:
+        break
+cap.release()
+cv2.destroyAllWindows()
 
 while True:
     # since we're jumping in mid-stream, the try/except will make sure we wait for good data
