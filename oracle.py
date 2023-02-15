@@ -19,7 +19,8 @@ answer_movs = os.listdir(answer_mov_root)
 # playing .mov files from python is ... difficult
 # so, letting bash do it via vlc, which has a robust and well-documented cli:
 # https://wiki.videolan.org/VLC_command-line_help/
-play_sleep_bash = "cvlc -R --no-video-title-show --no-interact -f ../the_oracle_mov/sleep.mov"
+print('Playing sleep mov ...')
+play_sleep_bash = "cvlc --playlist-enqueue -R --no-video-title-show --no-interact -f " + sleep_mov_path
 
 # start default sleep mov, non-blocking so interference can be caught
 sleep_process = subprocess.Popen(play_sleep_bash.split())
@@ -30,24 +31,26 @@ while True:
         # https://pyserial.readthedocs.io/en/latest/shortintro.html#readline
         value = serial_input.readline().strip().decode("utf-8")  # format for easy digestion - '3XX'
         # debug
-        print(value)
+        # print(value)
         # print(len(value))
 
         if len(value) is 3 and int(value) < 300:  # interference
 
-            # terminate sleep process
-            sleep_process.terminate()  # non-blocking process only requires terminate() to stop
-
+            # prepare answer mov
             # get a random idx for selecting random answer .mov
             answer_index = random.randint(0, len(answer_movs) - 1)
 
             # may need  --one-instance --play-and-exit; doesn't need --playlist-enqueue as that's default behavior
-            play_answer_bash = 'cvlc --no-video-title-show --no-interact --play-and-exit -f ' + answer_mov_root + answer_movs[answer_index]
+            play_answer_bash = 'cvlc --one-instance --playlist-enqueue --no-video-title-show --no-interact --play-and-exit -f ' + answer_mov_root + answer_movs[answer_index]
 
+            # terminate sleep process
+            sleep_process.terminate()  # non-blocking process only requires terminate() to stop
+            
             # queue the answer .mov
             answer_process = subprocess.Popen(play_answer_bash.split())
             # answer_process = subprocess.Popen(play_answer_bash.split(), stdout=subprocess.PIPE)
 
+            print('Playing answer mov ...')
             # calling wait() on the object returned from Popen will block until it completes.
             answer_process.wait()
 
