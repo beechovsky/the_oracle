@@ -19,11 +19,13 @@ answer_movs = os.listdir(answer_mov_root)
 # playing .mov files from python is ... difficult
 # so, letting bash do it via vlc, which has a robust and well-documented cli:
 # https://wiki.videolan.org/VLC_command-line_help/
-print('Playing sleep mov ...')
-play_sleep_bash = "cvlc --playlist-enqueue -R --no-video-title-show --no-interact -f " + sleep_mov_path
+play_sleep_bash = 'cvlc -f --no-video-title-show --no-interact -R ' + sleep_mov_path
 
 # start default sleep mov, non-blocking so interference can be caught
+print('Playing sleep mov ...')
 sleep_process = subprocess.Popen(play_sleep_bash.split())
+
+threshold = 300
 
 while True:
     # since we're jumping in mid-stream, the try/except will make sure we wait for good data
@@ -34,27 +36,28 @@ while True:
         # print(value)
         # print(len(value))
 
-        if len(value) is 3 and int(value) < 300:  # interference
+        if len(value) is 3 and int(value) < threshold:  # interference
 
             # prepare answer mov
             # get a random idx for selecting random answer .mov
             answer_index = random.randint(0, len(answer_movs) - 1)
 
-            # may need  --one-instance --play-and-exit; doesn't need --playlist-enqueue as that's default behavior
-            play_answer_bash = 'cvlc --one-instance --playlist-enqueue --no-video-title-show --no-interact --play-and-exit -f ' + answer_mov_root + answer_movs[answer_index]
+            # may need  --one-instance, --play-and-exit, or --playlist-enqueue
+            play_answer_bash = 'cvlc -f --no-video-title-show --no-interact --play-and-exit ' + answer_mov_root + answer_movs[answer_index]
 
             # terminate sleep process
             sleep_process.terminate()  # non-blocking process only requires terminate() to stop
             
             # queue the answer .mov
+            print('Playing answer mov ...')
             answer_process = subprocess.Popen(play_answer_bash.split())
             # answer_process = subprocess.Popen(play_answer_bash.split(), stdout=subprocess.PIPE)
-
-            print('Playing answer mov ...')
+        
             # calling wait() on the object returned from Popen will block until it completes.
             answer_process.wait()
 
             # fire up sleep mov when answer vid finishes
+            print('Replaying sleep mov ...')
             sleep_process = subprocess.Popen(play_sleep_bash.split())
 
             # flush buffer
