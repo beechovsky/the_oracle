@@ -21,6 +21,7 @@ answer_movs = os.listdir(answer_mov_root)
 # https://wiki.videolan.org/VLC_command-line_help/
 play_sleep_bash = 'cvlc -f --no-video-title-show --no-interact -R ' + sleep_mov_path
 
+# TODO: USe a more generic name, as this process should be re-used 
 # start default sleep mov, non-blocking so interference can be caught
 print('Playing sleep mov ...')
 sleep_process = subprocess.Popen(play_sleep_bash.split())
@@ -45,6 +46,7 @@ while True:
             # may need  --one-instance, --play-and-exit, or --playlist-enqueue
             play_answer_bash = 'cvlc -f --no-video-title-show --no-interact --play-and-exit ' + answer_mov_root + answer_movs[answer_index]
 
+            # TODO: don't clobber the process; use communicate instead
             # terminate sleep process
             sleep_process.terminate()  # non-blocking process only requires terminate() to stop
             
