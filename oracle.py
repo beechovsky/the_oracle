@@ -3,6 +3,10 @@ import time
 import os
 import random
 import subprocess
+import vlc
+
+# playing .mov files from python is ... difficult
+# using python vlc bindings
 
 # connect to Arduino
 serial_path = '/dev/ttyUSB0' # for ttyUSBN, N is assigned randomly at startup. May want to determine dynamically.
@@ -16,18 +20,17 @@ sleep_mov_path = '../the_oracle_mov/sleep.mov'
 answer_mov_root = '../the_oracle_mov/answers/'
 answer_movs = os.listdir(answer_mov_root)
 
-# playing .mov files from python is ... difficult
-# so, letting bash do it via vlc, which has a robust and well-documented cli:
-# https://wiki.videolan.org/VLC_command-line_help/
+# create vlc instance and player.
+vlc_instance = vlc.Instance('--fullscreen --no-video-title-show --no-interact'.split())
+player = vlc_instance.media_player_new()
 
-# DRY & comply with PEP8
-# possible options: --no-qt-video-autoresize, --no-autoscale
-play_sleep_bash = 'cvlc -f --no-video-title-show --no-interact -R ' + sleep_mov_path
+# kept for args
+# play_sleep_bash = 'cvlc -f --no-video-title-show --no-interact -R ' + sleep_mov_path
 
-# TODO: USe a more generic name, as this process should be re-used 
-# start default sleep mov, non-blocking so interference can be caught
 print('Playing sleep mov ...')
-sleep_process = subprocess.Popen(play_sleep_bash.split())
+media = vlc_instance.media_new_path(sleep_mov_path)
+player.set_media(media)
+player.play()
 
 threshold = 300
 
