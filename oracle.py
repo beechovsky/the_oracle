@@ -2,11 +2,13 @@ import serial
 import time
 import os
 import random
-import subprocess
 import vlc
+# import subprocess # may be handy for blocking during answer playback
 
 # playing .mov files from python is ... difficult
 # using python vlc bindings
+# https://www.olivieraubert.net/vlc/python-ctypes/doc/
+# https://wiki.videolan.org/VLC_command-line_help/
 
 # connect to Arduino
 serial_path = '/dev/ttyUSB0' # for ttyUSBN, N is assigned randomly at startup. May want to determine dynamically.
@@ -21,18 +23,22 @@ answer_mov_root = '../the_oracle_mov/answers/'
 answer_movs = os.listdir(answer_mov_root)
 
 # create vlc instance and player.
-vlc_instance = vlc.Instance('--fullscreen --no-video-title-show --no-interact'.split())
+vlc_instance = vlc.Instance()
 player = vlc_instance.media_player_new()
+# player.set_fullscreen(True) # TODO: turn on only when certain you can esc/minimize it
+# need to be able to get out of mov
+# TODO: Get interference via input working so you don't have to nuke the pi when in fullscreen
+#player.video_set_key_input(True)
+#player.video_set_mouse_input(True)
 
-# kept for args
-# play_sleep_bash = 'cvlc -f --no-video-title-show --no-interact -R ' + sleep_mov_path
-
-print('Playing sleep mov ...')
-media = vlc_instance.media_new_path(sleep_mov_path)
-player.set_media(media)
+print('Playing sleep .mov ...')
+sleep_media = vlc_instance.media_new_path(sleep_mov_path)
+# sleep_media.add_option() # TODO: solve repeating/loooping sleep .mov
+# vlc_instance.vlm_set_loop(sleep_media, True) # need a string of file name apparently
+player.set_media(sleep_media)
 player.play()
 
-threshold = 300
+threshold = 300 # nominal value from sensor; below indicates interference
 
 while True:
     # since we're jumping in mid-stream, the try/except will make sure we wait for good data
@@ -42,31 +48,29 @@ while True:
         # debug
         # print(value)
         # print(len(value))
-        if len(value) is 3 and int(value) < threshold:  # interference
+        if len(value) == 3 and int(value) < threshold:  # interference
 
             # prepare answer mov
             # get a random idx for selecting random answer .mov
+            # TODO: sort out how to block during answer playback; do not want to reposnd to subseqent quyestions until back to sleep movie
             answer_index = random.randint(0, len(answer_movs) - 1)
-
-            # may need  --one-instance, --play-and-exit, or --playlist-enqueue
-            play_answer_bash = 'cvlc -f --no-video-title-show --no-interact --play-and-exit ' + answer_mov_root + answer_movs[answer_index]
-
-            # TODO: don't clobber the process; use communicate instead
-            # terminate sleep process
-            sleep_process.terminate()  # non-blocking process only requires terminate() to stop
+            answer_path = answer_mov_root + answer_movs[answer_index]
+            answer_media = vlc_instance.media_new_path(answer_path)
+            player.set_media(answer_media)
+            player.play()
+            # TODO: Figure out how to play and then move to next item. Using a media list may help.
+            #while player.get_time() > 0:
+             #   # stall
+              #  time.sleep(player.get_time() / 1000)
             
-            # queue the answer .mov
-            print('Playing answer mov ...')
-            answer_process = subprocess.Popen(play_answer_bash.split())
-            # answer_process = subprocess.Popen(play_answer_bash.split(), stdout=subprocess.PIPE)
-        
-            # calling wait() on the object returned from Popen will block until it completes.
-            answer_process.wait()
-
-            # fire up sleep mov when answer vid finishes
-            print('Replaying sleep mov ...')
-            sleep_process = subprocess.Popen(play_sleep_bash.split())
-
+            #print('Left the loop.')
+            
+            # restart the sleep .mov
+            # unsure why this won't play again (unless processing skips teh answer mov . . .)
+            # player.set_media(sleep_media)
+            # player.set_time(0)
+            # player.play()
+            
             # flush buffer
             serial_input.reset_input_buffer()
 
