@@ -19,7 +19,7 @@ answer_movs = os.listdir(answer_mov_root)
 # playing .mov files from python is ... difficult
 # so, letting bash do it via vlc, which has a robust and well-documented cli:
 # https://wiki.videolan.org/VLC_command-line_help/
-play_sleep_bash = 'cvlc --one-instance -f --no-video-title-show --no-interact -R ' + sleep_mov_path
+play_sleep_bash = 'cvlc -f --no-video-title-show --no-interact -R ' + sleep_mov_path
 
 # TODO: USe a more generic name, as this process should be re-used 
 # start default sleep mov, non-blocking so interference can be caught
@@ -44,7 +44,7 @@ while True:
             answer_index = random.randint(0, len(answer_movs) - 1)
 
             # may need  --one-instance, --play-and-exit, or --playlist-enqueue
-            play_answer_bash = 'cvlc --one-instance -f --no-video-title-show --no-interact --play-and-exit ' + answer_mov_root + answer_movs[answer_index]
+            play_answer_bash = 'cvlc -f --no-video-title-show --no-interact --play-and-exit ' + answer_mov_root + answer_movs[answer_index]
 
             # TODO: don't clobber the process; use communicate instead
             # terminate sleep process
