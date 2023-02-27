@@ -1,0 +1,2 @@
+# sudo required because the keyboard lib has stupid guardrails
+sudo python3 oracle.py
