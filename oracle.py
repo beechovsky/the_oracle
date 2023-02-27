@@ -23,12 +23,13 @@ answer_mov_root = '../the_oracle_mov/answers/'
 answer_movs = os.listdir(answer_mov_root)
 
 # create vlc instance and player.
+# Consider creating 2 instances and swapping them out.
 vlc_instance = vlc.Instance() # passing options here doesn't seem to actually work
 
-# Standard player can play vids, but doesn't seem to respond to any commands like looping. Trying a list player below.
-# player = vlc_instance.media_player_new()
-list_player = vlc_instance.media_list_player_new()
-media_list = vlc_instance.media_list_new()
+# TWO OPTIONS: MediaPlayer, and MediaListPlayer. The former has more built-in methods.
+player = vlc_instance.media_player_new()
+#list_player = vlc_instance.media_list_player_new()
+#media_list = vlc_instance.media_list_new()
 # player.set_fullscreen(True) # TODO: turn on only when certain you can esc/minimize it
 # need to be able to get out of mov
 # TODO: Get interference via input working so you don't have to nuke the pi when in fullscreen
@@ -41,23 +42,29 @@ sleep_media = vlc_instance.media_new_path(sleep_mov_path)
 # vlc_instance.vlm_set_loop(sleep_media, True) # need a string of file name apparently
 # sleep_media.add_option_flag('--repeat',1)
 # player.set_media(sleep_media)
-#vlc_instance.vlm_set_loop(sleep_mov_path, True) # Sigh. Nope.
+# vlc_instance.vlm_set_loop(sleep_mov_path, True) # Sigh. Nope.
 # vlc.libvlc_vlm_set_loop(vlc_instance, sleep_media.get_meta(0), True) # get_meta(0) = Title
 # player.play()
-media_list.add_media(sleep_media)
-list_player.set_media_list(media_list)
-list_player.play()
+# media_list.add_media(sleep_media)
+# list_player.set_media_list(media_list)
+# list_player.play()
+
+def play_sleep_mov():
+    player.set_media(sleep_media)
+    # vlc_instance.vlm_set_loop(sleep_mov_path, True) # Sigh. Nope.
+    # vlc.libvlc_vlm_set_loop(vlc_instance, sleep_media.get_meta(0), True) # get_meta(0) = Title
+    player.play()
 
 threshold = 300 # nominal value from sensor; below indicates interference
+
+play_sleep_mov()
 
 while True:
     # since we're jumping in mid-stream, the try/except will make sure we wait for good data
     try:
         # https://pyserial.readthedocs.io/en/latest/shortintro.html#readline
         value = serial_input.readline().strip().decode("utf-8")  # format for easy digestion - '3XX'
-        # debug
         # print(value)
-        # print(len(value))
         if len(value) == 3 and int(value) < threshold:  # interference
 
             # prepare answer mov
@@ -66,21 +73,32 @@ while True:
             answer_index = random.randint(0, len(answer_movs) - 1)
             answer_path = answer_mov_root + answer_movs[answer_index]
             answer_media = vlc_instance.media_new_path(answer_path)
-            #player.set_media(answer_media)
-            #player.play()
-            media_list.remove_index(0) # trim the list; remove sleep .mov
-            media_list.add_media(answer_media)
-            list_player.set_media_list(media_list)
-            print('playing answer .mov ...') 
-            list_player.play() # next()?
+            print('playing answer .mov ...')
+            player.set_media(answer_media)
+            player.play()
+            #media_list.remove_index(0) # trim the list; remove sleep .mov
+            #media_list.add_media(answer_media)
+            #list_player.set_media_list(media_list)
+            #print('playing answer .mov ...') 
+            #list_player.play() # next() if we leave the sleep movie in
             # TODO: determine how to block during answer playback and how to start sleep .mov when it's done
+            # disallow input and play until finish:
+            #  https://stackoverflow.com/questions/49141463/how-to-wait-until-a-sound-file-ends-in-vlc-in-python-3-6
+            #  note 2 options. get_length() if using media player, or get_status if using media_list_player
+            time.sleep(1) # dunno if this is necessary
+            duration = player.get_length() / 1000
+            time.sleep(duration)
             
-            print('cleaning up answer .mov ...')
-            media_list.remove_index(0) # remove answer .mov to keep list from blowing up
-            media_list.add_media(sleep_media)
-            list_player.set_media_list(media_list)
-            print('replaying sleep .mov ...')
-            list_player.play()
+            # w/ list player
+            #print('cleaning up answer .mov ...')
+            #media_list.remove_index(0) # remove answer .mov to keep list from blowing up
+            #media_list.add_media(sleep_media)
+            #list_player.set_media_list(media_list)
+            #print('replaying sleep .mov ...')
+            #list_player.play()
+            
+            # transition is a little rough. try two instances of vlc?
+            play_sleep_mov()
             
             # flush buffer
             serial_input.reset_input_buffer()
