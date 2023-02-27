@@ -18,48 +18,37 @@ sleep_mov_path = '../the_oracle_mov/sleep.mov'
 answer_mov_root = '../the_oracle_mov/answers/'
 answer_movs = os.listdir(answer_mov_root)
 
+def play_mov(mov_path):
+    cap = cv2.VideoCapture(mov_path)
 
-####################################################################
-#
-# TRY OPENCV ON THIS REPO INSTEAD
-#
-# See here: https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html
-#
-#####################################################################
+    if (cap.isOpened()== False):
+        print("Error playing video with path:" + mov_path)
+        
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret == True:
+            cv2.imshow('Frame', frame)
+            # & 0xFF is required for a 64-bit system
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        else: #loop
+           # print('end of .mov')
+           cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+           continue # may be unnecessary
+    
+    cap.release()
+    cv2.destroyAllWindows()
 
+play_mov(sleep_mov_path)
 
-# playing .mov files from python is ... difficult
-# so, letting bash do it via vlc, which has a robust and well-documented cli:
-# https://wiki.videolan.org/VLC_command-line_help/
-
-# DRY & comply with PEP8
-# --no-qt-video-autoresize
-#vlc_bash = 'cvlc --fullscreen --no-autoscale --no-qt-video-autoresize --no-video-title-show --no-interact '
-#play_sleep_bash = vlc_bash + '--repeat ../the_oracle_mov/sleep.mov'
-
-# start default sleep mov, non-blocking so interference can be caught
-#sleep_process = subprocess.Popen(play_sleep_bash.split())
-cap = cv2.VideoCapture(sleep_mov_path)
-while(cap.isOpened()):
-    ret, frame = cap.read()
-    if ret == True:
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        cv2.imshow('frame', gray)
-        # & 0xFF is required for a 64-bit system
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    else:
-        break
-cap.release()
-cv2.destroyAllWindows()
-
+# main loop
 while True:
     # since we're jumping in mid-stream, the try/except will make sure we wait for good data
     try:
         # https://pyserial.readthedocs.io/en/latest/shortintro.html#readline
         value = serial_input.readline().strip().decode("utf-8")  # format for easy digestion - '3XX'
         # debug
-        print(value)
+        # print(value)
         # print(len(value))
 
         if len(value) is 3 and int(value) < 300:  # interference
