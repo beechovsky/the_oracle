@@ -1,0 +1,16 @@
+COPY THESE TO THE DESKTOP ON THE HOST MACHINE FOR EASY ACCESS BY NON-DEVS
+
+Installing & Running The Oracle
+These instructions assume you are using the Raspberry Pi similar to the one this project was developed on. Instructions for new installations on different machines can be found in the README.md file in the code repository.
+They also assume you know how to hook up a projector/monitor and external audio, if necessary.
+
+1. Plug the USB cable from the Arduino in the top-right USB port on the Pi. This is where the code is looking and the project will not work otherwise.
+2. Plug a mouse into any other USB port.
+3. Plug a keyboard into any remaining USB port.
+4. Click the terminal icon at the top left of the screen to open a terminal.
+5. In the terminal, run the following command to change directory: cd ../the_oracle
+6. In the new directory, run the following command to start The Oracle: ./run
+
+At this point, the default sleep video should be playing in fullscreen, and things should be good to go.
+
+To exit The Oracle gracefully, press the escape (Esc) key to leave fullscreen. In the terminal type Ctrl^C to stop the program.
